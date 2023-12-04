@@ -1,0 +1,51 @@
+services:
+    app:
+        container_name: OneApp
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: php81
+        restart: unless-stopped
+        working_dir: /var/www/
+        environment:
+            PHP_OPCACHE_ENABLE: 1
+            PHP_OPCACHE_VALIDATE_TIMESTAMPS: 1
+            PHP_OPCACHE_MAX_ACCELERATED_FILES: 10000
+            PHP_OPCACHE_MEMORY_CONSUMPTION: 192
+            PHP_OPCACHE_MAX_WASTED_PERCENTAGE: 10
+        volumes:
+            - .:/var/www:rw
+        networks:
+            - one-network
+    nginx:
+        container_name: OneServer
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+            - ./ssl:/etc/nginx/ssl
+        networks:
+            - one-network
+    mysql:
+        image: mariadb
+        container_name: OneDB
+        user: mysql
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+        volumes:
+            - ./docker/database/mariadb:/var/lib/mysql:rw
+        ports:
+            - "3306:3306"
+        networks:
+            - one-network
+
+networks:
+    one-network:
+        driver: bridge
